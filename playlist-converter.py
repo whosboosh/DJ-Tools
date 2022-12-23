@@ -28,10 +28,12 @@ def load_playlist(args):
 
         # Using os.system because subprocess added weird \\ double backslashes to path variables
         print(f"{count}/{len(files)} Converting {file} to {new_file}")
-        command = "ffmpeg -i "+file+" -hide_banner -loglevel panic -ab 320k -codec:a libmp3lame -q:a 0 -map_metadata 0 -id3v2_version 3 -write_id3v1 1 "+new_file
+        command = "ffmpeg -i "+file+" -loglevel panic -ab 320k -codec:a libmp3lame -q:a 0 -map_metadata 0 -id3v2_version 3 -write_id3v1 1 "+new_file
         if args.overwrite == True:
             command+=" -y"
-
+        else:
+            command+=" -n"
+        print(command)
         run = os.system(command)
         if run == signal.SIGINT:
             break
