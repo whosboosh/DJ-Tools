@@ -18,16 +18,25 @@ def _esc_char(match):
 def my_escape(name):
     return _to_esc.sub(_esc_char, name)
 
-def convert(command):
-    run = subprocess.Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-    stdout, stderr = run.communicate()
+def convert(files, overwrite):
+   for file in files:
+        # Thread logic            
+        while(thread_active_count >= 4):
+            for i in range(len(threads)):
+                if threads[i].poll() is not None:
+                    # Thread has finished
+                    thread_active_count -= 1
+                    thread = i
+                    print(f"{i} completed {thread_active_count}")
+                    break
+                else:
+                    print(f"{i} is not finished")
+            time.sleep(1)
 
-def load_playlist(args):
-    playlist = m3u8.load(args.playlist)
+        # Maybe add a lock here?
+        thread_active_count += 1
+        print(f"{thread} entering...")
 
-    files = playlist.files
-    count = 0
-    for file in files:
         # Fix paths to /mnt/f for running in wsl
         file = my_escape(subprocess.run(["wslpath", "-a", file], stdout=PIPE, stderr=PIPE, universal_newlines=True).stdout.strip())
         new_file=file.replace('flac', 'mp3')
@@ -40,10 +49,31 @@ def load_playlist(args):
             command+=" -n"
         print(command)
         
-        # Spawn thread to run work
-        t = Thread(target=convert, args=[command])
-        t.start()
+        run = subprocess.Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
+        stdout, stderr = run.communicate()
+        if run == signal.SIGINT:
+            break
+
+        # Add thread into pool at index of thread
+        threads[thread] = run
+        thread += 1
+
         count += 1
+
+def load_playlist(args):
+    playlist = m3u8.load(args.playlist)
+
+    files = playlist.files
+    count = 0
+    threads = [0] * 4
+    thread_active_count=0
+    thread = 0
+
+    print(len(threads))
+    for i in range(len(threads)):
+       threads[i] = Thread(target=convert, args=(files, args.overwrite))
+       threads[i].start()
+ 
 
 if __name__ == "__main__":
     # Entrypoint
