@@ -48,7 +48,7 @@ def load_playlist(args):
         new_file=file.replace('flac', 'mp3')
 
         print(f"{count}/{len(files)} Converting {file} to {new_file}")
-        command = "ffmpeg -i "+file+" -loglevel panic -err_detect ignore_er -ab 320k -codec:a libmp3lame -q:a 0 -map_metadata 0 -id3v2_version 3 -write_id3v1 1 "+new_file
+        command = "ffmpeg -i "+file+" -ab 320k -codec:a libmp3lame -q:a 0 -map_metadata 0 -id3v2_version 3 -write_id3v1 1 "+new_file
         if args.overwrite == True:
             command+=" -y"
         else:
@@ -59,6 +59,8 @@ def load_playlist(args):
         stdout, stderr = run.communicate()
         if run == signal.SIGINT:
             break
+        run.wait()
+        print(run.returncode)
 
         # Add thread into pool at index of thread
         threads[thread] = run
