@@ -10,6 +10,7 @@ import os
 import signal
 import re
 import time
+import multiprocessing
 
 _to_esc = re.compile(r'\s|[]()[]')
 def _esc_char(match):
@@ -25,9 +26,10 @@ def load_playlist(args):
     threads = [0] * 4
     thread_active_count=0
     thread = 0
+    num_cpus = multiprocessing.cpu_count()
     for file in files:
         # Thread logic            
-        while(thread_active_count >= 4):
+        while(thread_active_count >= num_cpus):
             for i,thread in enumerate(threads):
                 if thread.poll() is not None:
                     # Thread has finished
